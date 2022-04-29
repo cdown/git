@@ -1,0 +1,18 @@
+This is an important component of change submission as it explains to the
+community from a high level what you're trying to do, and why, in a way that's
+more apparent than just looking at your diff. Be sure to explain anything your
+diff doesn't make clear on its own.
+
+Here's an example body for `psuh`:
+
+----
+Our internal metrics indicate widespread interest in the command
+git-psuh - that is, many users are trying to use it, but finding it is
+unavailable, using some unknown workaround instead.
+
+The following handful of patches add the psuh command and implement some
+handy features on top of it.
+
+This patchset is part of the MyFirstContribution tutorial and should not
+be merged.
+----

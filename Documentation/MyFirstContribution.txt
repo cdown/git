@@ -808,8 +808,28 @@ https://github.com/gitgitgadget/git and open a PR either with the "New pull
 request" button or the convenient "Compare & pull request" button that may
 appear with the name of your newly pushed branch.
 
-Review the PR's title and description, as it's used by GitGitGadget as the cover
-letter for your change. When you're happy, submit your pull request.
+Review the PR's title and description, as they're used by GitGitGadget as the
+cover letter for your change. The cover letter describes your proposed
+contribution as a whole and is ideal to mention any context that might be
+useful for reviewers. The title of your PR should be something which
+succinctly covers the purpose of your entire topic branch, for example:
+
+----
+Adding the 'psuh' command
+----
+
+Your PR's description will used as the body of the cover letter.
+include::MyFirstContribution-coverletter.txt[]
+
+NOTE: For single-patch contributions, your commit message should already be
+meaningful and explain at a high level the purpose (what is happening and why)
+of your patch, so you usually do not need any additional context. In that case,
+remove the PR description that GitHub automatically generates from your commit
+message (your PR description should be empty). If you do need to supply even
+more context, you can do so in that space and it will be appended to the email
+that GitGitGadget will send, separately from your commit message.
+
+When you're happy, submit your pull request.
 
 [[run-ci-ggg]]
 === Running CI and Getting Ready to Send
@@ -976,25 +996,8 @@ filter their email for this type of flag.
 You'll need to add some extra parameters when you invoke `git send-email` to add
 the cover letter.
 
-Next you'll have to fill out the body of your cover letter. This is an important
-component of change submission as it explains to the community from a high level
-what you're trying to do, and why, in a way that's more apparent than just
-looking at your diff. Be sure to explain anything your diff doesn't make clear
-on its own.
-
-Here's an example body for `psuh`:
-
-----
-Our internal metrics indicate widespread interest in the command
-git-psuh - that is, many users are trying to use it, but finding it is
-unavailable, using some unknown workaround instead.
-
-The following handful of patches add the psuh command and implement some
-handy features on top of it.
-
-This patchset is part of the MyFirstContribution tutorial and should not
-be merged.
-----
+Next you'll have to fill out the body of your cover letter.
+include::MyFirstContribution-coverletter.txt[]
 
 The template created by `git format-patch --cover-letter` includes a diffstat.
 This gives reviewers a summary of what they're in for when reviewing your topic.
