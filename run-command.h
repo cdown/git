@@ -405,6 +405,10 @@ void check_pipe(int err);
  * pp_cb is the callback cookie as passed to run_processes_parallel.
  * You can store a child process specific callback cookie in pp_task_cb.
  *
+ * The "struct strbuf *err" parameter is either a pointer to a string
+ * to write errors to, or NULL if the "ungroup" option was
+ * provided. See run_processes_parallel() below.
+ *
  * Even after returning 0 to indicate that there are no more processes,
  * this function will be called again until there are no more running
  * child processes.
@@ -423,9 +427,9 @@ typedef int (*get_next_task_fn)(struct child_process *cp,
  * This callback is called whenever there are problems starting
  * a new process.
  *
- * You must not write to stdout or stderr in this function. Add your
- * message to the strbuf out instead, which will be printed without
- * messing up the output of the other parallel processes.
+ * The "struct strbuf *err" parameter is either a pointer to a string
+ * to write errors to, or NULL if the "ungroup" option was
+ * provided. See run_processes_parallel() below.
  *
  * pp_cb is the callback cookie as passed into run_processes_parallel,
  * pp_task_cb is the callback cookie as passed into get_next_task_fn.
@@ -441,9 +445,9 @@ typedef int (*start_failure_fn)(struct strbuf *out,
 /**
  * This callback is called on every child process that finished processing.
  *
- * You must not write to stdout or stderr in this function. Add your
- * message to the strbuf out instead, which will be printed without
- * messing up the output of the other parallel processes.
+ * The "struct strbuf *err" parameter is either a pointer to a string
+ * to write errors to, or NULL if the "ungroup" option was
+ * provided. See run_processes_parallel() below.
  *
  * pp_cb is the callback cookie as passed into run_processes_parallel,
  * pp_task_cb is the callback cookie as passed into get_next_task_fn.
@@ -458,25 +462,47 @@ typedef int (*task_finished_fn)(int result,
 				void *pp_task_cb);
 
 /**
+ * Options to pass to run_processes_parallel(), { 0 }-initialized
+ * means no options. Fields:
+ *
+ * tr2_category & tr2_label: sets the trace2 category and label for
+ * logging. These must either be unset, or both of them must be set.
+ *
+ * ungroup: Ungroup output. Output is printed as soon as possible and
+ * bypasses run-command's internal processing. This may cause output
+ * from different commands to be mixed.
+ */
+struct run_process_parallel_opts
+{
+	const char *tr2_category;
+	const char *tr2_label;
+	unsigned int ungroup:1;
+};
+
+/**
  * Runs up to n processes at the same time. Whenever a process can be
  * started, the callback get_next_task_fn is called to obtain the data
  * required to start another child process.
  *
  * The children started via this function run in parallel. Their output
  * (both stdout and stderr) is routed to stderr in a manner that output
- * from different tasks does not interleave.
+ * from different tasks does not interleave (but see "ungroup" above).
  *
  * start_failure_fn and task_finished_fn can be NULL to omit any
  * special handling.
+ *
+ * Options are passed via a "struct run_process_parallel_opts". If the
+ * "ungroup" option isn't specified the callbacks will get a pointer
+ * to a "struct strbuf *out", and must not write to stdout or stderr
+ * as such output will mess up the output of the other parallel
+ * processes. If "ungroup" option is specified callbacks will get a
+ * NULL "struct strbuf *out" parameter, and are responsible for
+ * emitting their own output, including dealing with any race
+ * conditions due to writing in parallel to stdout and stderr.
  */
-int run_processes_parallel(int n,
-			   get_next_task_fn,
-			   start_failure_fn,
-			   task_finished_fn,
-			   void *pp_cb);
-int run_processes_parallel_tr2(int n, get_next_task_fn, start_failure_fn,
-			       task_finished_fn, void *pp_cb,
-			       const char *tr2_category, const char *tr2_label);
+int run_processes_parallel(int n, get_next_task_fn, start_failure_fn,
+			   task_finished_fn, void *pp_cb,
+			   struct run_process_parallel_opts *opts);
 
 /**
  * Convenience function which prepares env for a command to be run in a

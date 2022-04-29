@@ -31,7 +31,11 @@ static int parallel_next(struct child_process *cp,
 		return 0;
 
 	strvec_pushv(&cp->args, d->args.v);
-	strbuf_addstr(err, "preloaded output of a child\n");
+	if (err)
+		strbuf_addstr(err, "preloaded output of a child\n");
+	else
+		fprintf(stderr, "preloaded output of a child\n");
+
 	number_callbacks++;
 	return 1;
 }
@@ -41,7 +45,10 @@ static int no_job(struct child_process *cp,
 		  void *cb,
 		  void **task_cb)
 {
-	strbuf_addstr(err, "no further jobs available\n");
+	if (err)
+		strbuf_addstr(err, "no further jobs available\n");
+	else
+		fprintf(stderr, "no further jobs available\n");
 	return 0;
 }
 
@@ -50,7 +57,10 @@ static int task_finished(int result,
 			 void *pp_cb,
 			 void *pp_task_cb)
 {
-	strbuf_addstr(err, "asking for a quick stop\n");
+	if (err)
+		strbuf_addstr(err, "asking for a quick stop\n");
+	else
+		fprintf(stderr, "asking for a quick stop\n");
 	return 1;
 }
 
@@ -183,7 +193,7 @@ static int testsuite(int argc, const char **argv)
 		(uintmax_t)suite.tests.nr, max_jobs);
 
 	ret = run_processes_parallel(max_jobs, next_test, test_failed,
-				     test_finished, &suite);
+				     test_finished, &suite, NULL);
 
 	if (suite.failed.nr > 0) {
 		ret = 1;
@@ -371,6 +381,7 @@ int cmd__run_command(int argc, const char **argv)
 {
 	struct child_process proc = CHILD_PROCESS_INIT;
 	int jobs;
+	struct run_process_parallel_opts opts = { 0 };
 
 	if (argc > 1 && !strcmp(argv[1], "testsuite"))
 		exit(testsuite(argc - 1, argv + 1));
@@ -411,17 +422,26 @@ int cmd__run_command(int argc, const char **argv)
 	strvec_clear(&proc.args);
 	strvec_pushv(&proc.args, (const char **)argv + 3);
 
-	if (!strcmp(argv[1], "run-command-parallel"))
+	if (!strcmp(argv[1], "run-command-parallel") ||
+	    !strcmp(argv[1], "run-command-parallel-ungroup")) {
+		opts.ungroup = !strcmp(argv[1], "run-command-parallel-ungroup");
 		exit(run_processes_parallel(jobs, parallel_next,
-					    NULL, NULL, &proc));
+					    NULL, NULL, &proc, &opts));
+	}
 
-	if (!strcmp(argv[1], "run-command-abort"))
-		exit(run_processes_parallel(jobs, parallel_next,
-					    NULL, task_finished, &proc));
+	if (!strcmp(argv[1], "run-command-abort") ||
+	    !strcmp(argv[1], "run-command-abort-ungroup")) {
+		opts.ungroup = !strcmp(argv[1], "run-command-abort-ungroup");
+		exit(run_processes_parallel(jobs, parallel_next, NULL,
+					    task_finished, &proc, &opts));
+	}
 
-	if (!strcmp(argv[1], "run-command-no-jobs"))
-		exit(run_processes_parallel(jobs, no_job,
-					    NULL, task_finished, &proc));
+	if (!strcmp(argv[1], "run-command-no-jobs") ||
+	    !strcmp(argv[1], "run-command-no-jobs-ungroup")) {
+		opts.ungroup = !strcmp(argv[1], "run-command-no-jobs-ungroup");
+		exit(run_processes_parallel(jobs, no_job, NULL, task_finished,
+					    &proc, &opts));
+	}
 
 	fprintf(stderr, "check usage\n");
 	return 1;

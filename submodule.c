@@ -1818,6 +1818,10 @@ int fetch_submodules(struct repository *r,
 {
 	int i;
 	struct submodule_parallel_fetch spf = SPF_INIT;
+	struct run_process_parallel_opts run_opts = {
+		.tr2_category = "submodule",
+		.tr2_label = "parallel/fetch",
+	};
 
 	spf.r = r;
 	spf.command_line_option = command_line_option;
@@ -1839,12 +1843,9 @@ int fetch_submodules(struct repository *r,
 
 	calculate_changed_submodule_paths(r, &spf.changed_submodule_names);
 	string_list_sort(&spf.changed_submodule_names);
-	run_processes_parallel_tr2(max_parallel_jobs,
-				   get_next_submodule,
-				   fetch_start_failure,
-				   fetch_finish,
-				   &spf,
-				   "submodule", "parallel/fetch");
+	run_processes_parallel(max_parallel_jobs, get_next_submodule,
+			       fetch_start_failure, fetch_finish, &spf,
+			       &run_opts);
 
 	if (spf.submodules_with_errors.len > 0)
 		fprintf(stderr, _("Errors during submodule fetch:\n%s"),

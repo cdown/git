@@ -1948,14 +1948,17 @@ static int fetch_multiple(struct string_list *list, int max_children)
 
 	if (max_children != 1 && list->nr != 1) {
 		struct parallel_fetch_state state = { argv.v, list, 0, 0 };
+		struct run_process_parallel_opts run_opts = {
+			.tr2_category = "fetch",
+			.tr2_label = "parallel/fetch",
+		};
 
 		strvec_push(&argv, "--end-of-options");
-		result = run_processes_parallel_tr2(max_children,
-						    &fetch_next_remote,
-						    &fetch_failed_to_start,
-						    &fetch_finished,
-						    &state,
-						    "fetch", "parallel/fetch");
+		result = run_processes_parallel(max_children,
+						&fetch_next_remote,
+						&fetch_failed_to_start,
+						&fetch_finished, &state,
+						&run_opts);
 
 		if (!result)
 			result = state.result;
