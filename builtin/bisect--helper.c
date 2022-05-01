@@ -682,6 +682,10 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, const char **a
 			die(_("'%s' does not appear to be a valid "
 			      "revision"), arg);
 		} else {
+			if (!has_double_dash &&
+			    !looks_like_pathspec(arg) &&
+			    !check_filename(NULL, arg))
+				warning(_("assuming '%s' is a path"), arg);
 			break;
 		}
 	}

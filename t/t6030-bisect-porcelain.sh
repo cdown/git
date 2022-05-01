@@ -1025,4 +1025,22 @@ test_expect_success 'bisect visualize with a filename with dash and space' '
 	git bisect visualize -p -- "-hello 2"
 '
 
+test_expect_success 'bisect warning on implicit enoent pathspec' '
+	git bisect reset &&
+	git bisect start "$HASH4" doesnotexist 2>output &&
+	grep -F "assuming '\''doesnotexist'\'' is a path" output
+'
+
+test_expect_success 'bisect fatal on implicit enoent pathspec with dash' '
+	git bisect reset &&
+	test_must_fail git bisect start "$HASH4" doesnotexist -- dne2 2>output &&
+	grep -F "'\''doesnotexist'\'' does not appear to be a valid revision" output
+'
+
+test_expect_success 'bisect no warning on explicit enoent pathspec' '
+	git bisect reset &&
+	git bisect start "$HASH4" -- doesnotexist 2>output &&
+	[ -z "$(cat output)" ]
+'
+
 test_done

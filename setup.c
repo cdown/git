@@ -208,7 +208,7 @@ static void NORETURN die_verify_filename(struct repository *r,
  * but which look sufficiently like pathspecs that we'll consider
  * them such for the purposes of rev/pathspec DWIM parsing.
  */
-static int looks_like_pathspec(const char *arg)
+int looks_like_pathspec(const char *arg)
 {
 	const char *p;
 	int escaped = 0;

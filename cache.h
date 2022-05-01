@@ -648,6 +648,7 @@ void verify_filename(const char *prefix,
 		     int diagnose_misspelt_rev);
 void verify_non_filename(const char *prefix, const char *name);
 int path_inside_repo(const char *prefix, const char *path);
+int looks_like_pathspec(const char *arg);
 
 #define INIT_DB_QUIET 0x0001
 #define INIT_DB_EXIST_OK 0x0002
