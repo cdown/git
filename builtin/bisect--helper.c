@@ -404,6 +404,21 @@ static struct bisect_state bisect_status(const struct bisect_terms *terms)
 	return bs;
 }
 
+__attribute__((format (printf, 1, 2)))
+static void bisect_log_printf(const char *fmt, ...)
+{
+	va_list ap;
+	char buf[1024];
+
+	va_start(ap, fmt);
+	if (vsnprintf(buf, sizeof(buf), fmt, ap) < 0)
+		*buf = '\0';
+	va_end(ap);
+
+	printf("%s", buf);
+	append_to_file(git_path_bisect_log(), "# %s", buf);
+}
+
 static void bisect_print_status(const struct bisect_terms *terms)
 {
 	const struct bisect_state bs = bisect_status(terms);
@@ -413,13 +428,13 @@ static void bisect_print_status(const struct bisect_terms *terms)
 		return;
 
 	if (!bs.nr_good && !bs.nr_bad)
-		printf(_("status: waiting for both good and bad commits\n"));
+		bisect_log_printf(_("status: waiting for both good and bad commits\n"));
 	else if (bs.nr_good)
-		printf(Q_("status: waiting for bad commit, %d good commit known\n",
-			  "status: waiting for bad commit, %d good commits known\n",
-			  bs.nr_good), bs.nr_good);
+		bisect_log_printf(Q_("status: waiting for bad commit, %d good commit known\n",
+				     "status: waiting for bad commit, %d good commits known\n",
+				     bs.nr_good), bs.nr_good);
 	else
-		printf(_("status: waiting for good commit(s), bad commit known\n"));
+		bisect_log_printf(_("status: waiting for good commit(s), bad commit known\n"));
 }
 
 static int bisect_next_check(const struct bisect_terms *terms,

@@ -1029,18 +1029,23 @@ test_expect_success 'bisect state output with multiple good commits' '
        git bisect reset &&
        git bisect start >output &&
        grep "waiting for both good and bad commits" output &&
+       git bisect log | grep "waiting for both good and bad commits" &&
        git bisect good "$HASH1" >output &&
        grep "waiting for bad commit, 1 good commit known" output &&
+       git bisect log | grep "waiting for bad commit, 1 good commit known" &&
        git bisect good "$HASH2" >output &&
-       grep "waiting for bad commit, 2 good commits known" output
+       grep "waiting for bad commit, 2 good commits known" output &&
+       git bisect log | grep "waiting for bad commit, 2 good commits known"
 '
 
 test_expect_success 'bisect state output with bad commit' '
        git bisect reset &&
        git bisect start >output &&
        grep "waiting for both good and bad commits" output &&
+       git bisect log | grep "waiting for both good and bad commits" &&
        git bisect bad "$HASH4" >output &&
-       grep -F "waiting for good commit(s), bad commit known" output
+       grep -F "waiting for good commit(s), bad commit known" output &&
+       git bisect log | grep -F "waiting for good commit(s), bad commit known"
 '
 
 test_done
