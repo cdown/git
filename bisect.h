@@ -62,6 +62,12 @@ enum bisect_error {
 	BISECT_INTERNAL_SUCCESS_MERGE_BASE = -11
 };
 
+struct bisect_state {
+	int nr_good;  /* How many good commits do we have? */
+	int nr_bad;   /* How many bad commits do we have? (Well, you can only
+			  have 0 or 1, but...) */
+};
+
 enum bisect_error bisect_next_all(struct repository *r, const char *prefix);
 
 int estimate_bisect_steps(int all);
