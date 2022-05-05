@@ -329,12 +329,12 @@ static int check_and_set_terms(struct bisect_terms *terms, const char *cmd)
 	return 0;
 }
 
-static int mark_good(const char *refname, const struct object_id *oid,
-		     int flag, void *cb_data)
+static int inc_nr(const char *refname, const struct object_id *oid,
+		  int flag, void *cb_data)
 {
-	int *m_good = (int *)cb_data;
-	*m_good = 0;
-	return 1;
+	int *nr = (int *)cb_data;
+	(*nr)++;
+	return 0;
 }
 
 static const char need_bad_and_good_revision_warning[] =
@@ -384,23 +384,49 @@ static int decide_next(const struct bisect_terms *terms,
 			     vocab_good, vocab_bad, vocab_good, vocab_bad);
 }
 
-static int bisect_next_check(const struct bisect_terms *terms,
-			     const char *current_term)
+static struct bisect_state bisect_status(const struct bisect_terms *terms)
 {
-	int missing_good = 1, missing_bad = 1;
 	char *bad_ref = xstrfmt("refs/bisect/%s", terms->term_bad);
 	char *good_glob = xstrfmt("%s-*", terms->term_good);
+	struct bisect_state bs;
+
+	memset(&bs, 0, sizeof(bs));
 
 	if (ref_exists(bad_ref))
-		missing_bad = 0;
+		bs.nr_bad = 1;
 
-	for_each_glob_ref_in(mark_good, good_glob, "refs/bisect/",
-			     (void *) &missing_good);
+	for_each_glob_ref_in(inc_nr, good_glob, "refs/bisect/",
+			     (void *) &bs.nr_good);
 
 	free(good_glob);
 	free(bad_ref);
 
-	return decide_next(terms, current_term, missing_good, missing_bad);
+	return bs;
+}
+
+static void bisect_print_status(const struct bisect_terms *terms)
+{
+	const struct bisect_state bs = bisect_status(terms);
+
+	/* If we had both, we'd already be started, and shouldn't get here. */
+	if (bs.nr_good && bs.nr_bad)
+		return;
+
+	if (!bs.nr_good && !bs.nr_bad)
+		printf(_("info: waiting for both good and bad commits\n"));
+	else if (bs.nr_good)
+		printf(Q_("info: waiting for bad commit, %d good commit known\n",
+			  "info: waiting for bad commit, %d good commits known\n",
+			  bs.nr_good), bs.nr_good);
+	else
+		printf(_("info: waiting for good commit(s), bad commit known\n"));
+}
+
+static int bisect_next_check(const struct bisect_terms *terms,
+			     const char *current_term)
+{
+	const struct bisect_state bs = bisect_status(terms);
+	return decide_next(terms, current_term, !bs.nr_good, !bs.nr_bad);
 }
 
 static int get_terms(struct bisect_terms *terms)
@@ -606,8 +632,10 @@ static enum bisect_error bisect_next(struct bisect_terms *terms, const char *pre
 
 static enum bisect_error bisect_auto_next(struct bisect_terms *terms, const char *prefix)
 {
-	if (bisect_next_check(terms, NULL))
+	if (bisect_next_check(terms, NULL)) {
+		bisect_print_status(terms);
 		return BISECT_OK;
+	}
 
 	return bisect_next(terms, prefix);
 }
